@@ -221,6 +221,12 @@
     .btn-restart {
       background: linear-gradient(135deg, #a8edea, #fed6e3);
       color: #5a5a5a;
+      margin-right: 10px;
+    }
+
+    .btn-view-results {
+      background: linear-gradient(135deg, #ff9a9e, #fecfef);
+      color: white;
     }
 
     .confetti {
@@ -240,6 +246,15 @@
         transform: translateY(400px) rotate(720deg);
         opacity: 0;
       }
+    }
+
+    .error-message {
+      background: #ffcccc;
+      color: #cc0000;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      display: none;
     }
   </style>
 </head>
@@ -364,7 +379,13 @@
         <p class="results-message">
           Your answers have been recorded! You're absolutely wonderful for taking the time to complete this survey. 💕
         </p>
-        <button class="btn btn-restart" onclick="restartSurvey()">Start Over 🔄</button>
+        <div class="error-message" id="errorMessage"></div>
+        <div class="nav-buttons" style="justify-content: center; gap: 10px;">
+          <button class="btn btn-restart" onclick="restartSurvey()">Start Over 🔄</button>
+          <a href="/results" target="_blank" style="text-decoration: none;">
+            <button class="btn btn-view-results" style="cursor: pointer;">View Results 📊</button>
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -460,7 +481,7 @@
       progressFill.style.width = progress + '%';
     }
 
-    function showResults() {
+    async function showResults() {
       document.querySelectorAll('.question-screen').forEach(screen => {
         screen.classList.remove('active');
       });
@@ -474,8 +495,28 @@
       // Confetti effect
       createConfetti();
       
-      // Log answers (you can send these to a server)
-      console.log('Survey answers:', answers);
+      // Send answers to backend
+      try {
+        const response = await fetch('/api/submit-survey', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ answers })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save survey');
+        }
+
+        const result = await response.json();
+        console.log('Survey saved successfully:', result);
+      } catch (error) {
+        console.error('Error saving survey:', error);
+        const errorMsg = document.getElementById('errorMessage');
+        errorMsg.textContent = '⚠️ Note: Could not save to server, but your survey was completed!';
+        errorMsg.style.display = 'block';
+      }
     }
 
     function createConfetti() {
